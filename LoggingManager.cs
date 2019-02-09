@@ -201,10 +201,19 @@ namespace AlwaysTooLate.Logging
             {
                 // Find first '.cs:'
                 var fileExtensionIdx = sender.IndexOf(".cs:", StringComparison.InvariantCultureIgnoreCase);
-                var fileExtensionIdxEnd = sender.IndexOf(')', fileExtensionIdx) - 1;
-                var fileNameIdx = sender.LastIndexOf('/', fileExtensionIdx, fileExtensionIdx - 1);
 
-                sender = sender.Substring(fileNameIdx + 1, fileExtensionIdxEnd - fileNameIdx);
+                // or '.cpp'
+                if (fileExtensionIdx == -1)
+                    fileExtensionIdx = sender.IndexOf(".cpp:", StringComparison.InvariantCultureIgnoreCase);
+
+                if (fileExtensionIdx >= 0)
+                {
+                    var fileExtensionIdxEnd = sender.IndexOf(')', fileExtensionIdx) - 1;
+                    var fileNameIdx = sender.LastIndexOf('/', fileExtensionIdx, fileExtensionIdx - 1);
+
+                    if(fileExtensionIdxEnd >= 0 && fileNameIdx < sender.Length)
+                        sender = sender.Substring(fileNameIdx + 1, fileExtensionIdxEnd - fileNameIdx);
+                }
             }
 
             // construct log message
