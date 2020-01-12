@@ -53,7 +53,7 @@ namespace AlwaysTooLate.Logging
         public bool BackupOldLogs = true;
 
         /// <summary>
-        /// When true an additional thread is being spawn, which writes the logs into the log file.
+        /// When true an additional thread is spawned, which writes the logs into the log file.
         /// </summary>
         [Tooltip("When true an additional thread is being spawn, which writes the logs into the log file.")]
         public bool EnableThreadedWriter = true;
