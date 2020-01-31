@@ -1,12 +1,10 @@
 {
-    "name": "AlwaysTooLate.Logging", 
+    "name": "com.alwaystoolate.logging", 
+    "displayName": "AlwaysTooLate Logging",
+    "description": "AlwaysTooLate Logging module",
     "unity": "2018.3", 
-    "version": "1.0.0-preview", 
+    "version": "1.0.0", 
     "dependencies": {
-        "AlwaysTooLate.Core": "1.0"
-    }, 
-    "keywords": [
-        "AlwaysTooLate"
-    ], 
-    "description": "AlwaysTooLate Logging module"
+		"com.alwaystoolate.core": "1.0.0"
+	}
 }
