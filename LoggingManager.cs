@@ -13,98 +13,90 @@ namespace AlwaysTooLate.Logging
     public delegate void MessageHandler(string message, LogType level);
 
     /// <summary>
-    /// LoggingManager class. Provides logging functionality such as logging disable and cute log output file.
-    /// This manager spawns additional thread (when enabled) which is being used, to write logs into the log file.
-    /// Should be initialized on main (entry) scene.
+    ///     LoggingManager class. Provides logging functionality such as logging disable and cute log output file.
+    ///     This manager spawns additional thread (when enabled) which is being used, to write logs into the log file.
+    ///     Should be initialized on main (entry) scene.
     /// </summary>
+    [DefaultExecutionOrder(-1000)]
     public class LoggingManager : BehaviourSingleton<LoggingManager>
     {
-        private struct Log
-        {
-            public string Message { get; set; }
-            public object Sender { get; set; }
-            public LogType Type { get; set; }
-            public DateTime Time { get; set; }
-        }
+        private volatile bool _disposed;
+        private ConcurrentQueue<Log> _logQueue;
+        private FileStream _logStream;
+        private Thread _logThread;
+        private StreamWriter _logWriter;
 
         /// <summary>
-        /// When false, no logs will be produced (even into the standard log file!).
-        /// </summary>
-        [Tooltip("When false, no logs will be produced (even into the standard log file!).")]
-        public bool EnableLogs = true;
-
-        /// <summary>
-        /// When false, logs won't contain any stacktrace information.
-        /// </summary>
-        [Tooltip("When false, logs won't contain any stacktrace information.")]
-        public bool EnableStacktrace = true;
-
-        /// <summary>
-        /// When true, the log stacktrace will be stripped to format: (file:line), instead of
-        /// full stack trace.
-        /// </summary>
-        [Tooltip("When true, the log stacktrace will be stripped to format: (file:line), instead of full stack trace.")]
-        public bool StripStacktrace = true;
-
-        /// <summary>
-        /// When true, backup folder will be created which will store all old logs.
-        /// </summary>
-        [Tooltip("When true, backup folder will be created which will store all old logs.")]
-        public bool BackupOldLogs = true;
-
-        /// <summary>
-        /// When true an additional thread is spawned, which writes the logs into the log file.
-        /// </summary>
-        [Tooltip("When true an additional thread is being spawn, which writes the logs into the log file.")]
-        public bool EnableThreadedWriter = true;
-
-        /// <summary>
-        /// When true, logs which will go the the backup folder will be compressed.
-        /// </summary>
-        [Tooltip("When true, logs which will go the the backup folder will be compressed.")]
-        public bool CompressBackups = true;
-
-        /// <summary>
-        /// The folder, which collects old log files.
+        ///     The folder, which collects old log files.
         /// </summary>
         [Tooltip("The folder, which collects old log files.")]
         public string BackupDirectory = "./Logs/";
 
         /// <summary>
-        /// Name of the log output file.
+        ///     When true, backup folder will be created which will store all old logs.
+        /// </summary>
+        [Tooltip("When true, backup folder will be created which will store all old logs.")]
+        public bool BackupOldLogs = true;
+
+        /// <summary>
+        ///     When true, logs which will go the the backup folder will be compressed.
+        /// </summary>
+        [Tooltip("When true, logs which will go the the backup folder will be compressed.")]
+        public bool CompressBackups = true;
+
+        /// <summary>
+        ///     When false, no logs will be produced (even into the standard log file!).
+        /// </summary>
+        [Tooltip("When false, no logs will be produced (even into the standard log file!).")]
+        public bool EnableLogs = true;
+
+        /// <summary>
+        ///     When false, logs won't contain any stacktrace information.
+        /// </summary>
+        [Tooltip("When false, logs won't contain any stacktrace information.")]
+        public bool EnableStacktrace = true;
+
+        /// <summary>
+        ///     When true an additional thread is spawned, which writes the logs into the log file.
+        /// </summary>
+        [Tooltip("When true an additional thread is being spawn, which writes the logs into the log file.")]
+        public bool EnableThreadedWriter = true;
+
+        /// <summary>
+        ///     Name of the log output file.
         /// </summary>
         [Tooltip("Name of the log output file.")]
         public string LogFileName = "Log.txt";
-        
-        /// <summary>
-        /// The log time format.
-        /// </summary>
-        [Tooltip("The log time format.")]
-        public string TimeFormat = "dd/MM/yyyy HH:mm:ss";
 
         /// <summary>
-        /// The amount of time (ms) that logger thread waits before writing batch of logs into the log file.
+        ///     The amount of time (ms) that logger thread waits before writing batch of logs into the log file.
         /// </summary>
         [Tooltip("The amount of time (ms) that logger thread waits before writing batch of logs into the log file.")]
         public int LoggerThreadFrequency = 30;
 
         /// <summary>
-        /// When true, logging manager will invoke log callback when new log is writing.
+        ///     When true, the log stacktrace will be stripped to format: (file:line), instead of
+        ///     full stack trace.
         /// </summary>
-        [Tooltip("When true, logging manager will invoke log callback when new log is writing.")]
-        public bool UseLogCallback = true;
+        [Tooltip("When true, the log stacktrace will be stripped to format: (file:line), instead of full stack trace.")]
+        public bool StripStacktrace = true;
 
         /// <summary>
-        /// When false, log callback may be called from non-main thread!
+        ///     The log time format.
+        /// </summary>
+        [Tooltip("The log time format.")] public string TimeFormat = "dd/MM/yyyy HH:mm:ss";
+
+        /// <summary>
+        ///     When false, log callback may be called from non-main thread!
         /// </summary>
         [Tooltip("When false, log callback may be called from non-main thread!")]
         public bool UseDispatchedLogCallback = true;
 
-        private volatile bool _disposed;
-        private Thread _logThread;
-        private FileStream _logStream;
-        private StreamWriter _logWriter;
-        private ConcurrentQueue<Log> _logQueue;
+        /// <summary>
+        ///     When true, logging manager will invoke log callback when new log is writing.
+        /// </summary>
+        [Tooltip("When true, logging manager will invoke log callback when new log is writing.")]
+        public bool UseLogCallback = true;
 
         protected override void OnAwake()
         {
@@ -113,7 +105,7 @@ namespace AlwaysTooLate.Logging
 
             // Create output log queue
             _logQueue = new ConcurrentQueue<Log>();
-            
+
             // Add the unity3d log message handle
             Application.logMessageReceived += UnityHandle;
 
@@ -137,7 +129,8 @@ namespace AlwaysTooLate.Logging
 
                 if (CompressBackups)
                 {
-                    using (var archive = ZipFile.Open(Path.Combine(BackupDirectory, backupFileName + ".zip"), ZipArchiveMode.Create))
+                    using (var archive = ZipFile.Open(Path.Combine(BackupDirectory, backupFileName + ".zip"),
+                        ZipArchiveMode.Create))
                     {
                         archive.CreateEntryFromFile(LogFileName, LogFileName);
                     }
@@ -172,10 +165,10 @@ namespace AlwaysTooLate.Logging
 
             _logThread.Join(1000);
 
-            if(_logThread.IsAlive)
+            if (_logThread.IsAlive)
                 _logThread.Abort();
         }
-        
+
         private void LoggingThread()
         {
             while (!_disposed)
@@ -211,15 +204,15 @@ namespace AlwaysTooLate.Logging
                     var fileExtensionIdxEnd = sender.IndexOf(')', fileExtensionIdx) - 1;
                     var fileNameIdx = sender.LastIndexOf('/', fileExtensionIdx, fileExtensionIdx - 1);
 
-                    if(fileExtensionIdxEnd >= 0 && fileNameIdx < sender.Length)
+                    if (fileExtensionIdxEnd >= 0 && fileNameIdx < sender.Length)
                         sender = sender.Substring(fileNameIdx + 1, fileExtensionIdxEnd - fileNameIdx);
                 }
             }
 
             // construct log message
-            var msg = log.Sender != null && EnableStacktrace ? 
-                $"{log.Time.ToString(TimeFormat)} [{log.Type}] ({sender}): {log.Message}" : 
-                $"{log.Time.ToString(TimeFormat)} [{log.Type}] {log.Message}";
+            var msg = log.Sender != null && EnableStacktrace
+                ? $"{log.Time.ToString(TimeFormat)} [{log.Type}] ({sender}): {log.Message}"
+                : $"{log.Time.ToString(TimeFormat)} [{log.Type}] {log.Message}";
 
             return msg.Replace("\n", "") + "\n";
         }
@@ -233,14 +226,12 @@ namespace AlwaysTooLate.Logging
             _logWriter.Write(message);
 
             if (UseLogCallback && !UseDispatchedLogCallback)
-            {
                 // Try call OnMessage
                 OnMessage?.Invoke(message, log.Type);
-            }
         }
 
         /// <summary>
-        /// Writes all queued logs into the log file.
+        ///     Writes all queued logs into the log file.
         /// </summary>
         public void FlushLogs()
         {
@@ -255,7 +246,7 @@ namespace AlwaysTooLate.Logging
         }
 
         /// <summary>
-        /// Write the log.
+        ///     Write the log.
         /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="sender">The message sender(optional, use null when don't want to use this)</param>
@@ -275,26 +266,28 @@ namespace AlwaysTooLate.Logging
             };
 
             if (EnableThreadedWriter)
-            {
                 // Enqueue the log message
                 _logQueue.Enqueue(log);
-            }
             else
-            {
                 FlushLog(log);
-            }
 
             if (UseLogCallback && UseDispatchedLogCallback)
-            {
                 // try call OnMessage
                 OnMessage?.Invoke(ConstructMessage(log), log.Type);
-            }
         }
 
         /// <summary>
-        /// OnMessage event - called when new log is queued.
-        /// UseLogCallback = true; is required!
+        ///     OnMessage event - called when new log is queued.
+        ///     UseLogCallback = true; is required!
         /// </summary>
         public static event MessageHandler OnMessage;
+
+        private struct Log
+        {
+            public string Message { get; set; }
+            public object Sender { get; set; }
+            public LogType Type { get; set; }
+            public DateTime Time { get; set; }
+        }
     }
 }
