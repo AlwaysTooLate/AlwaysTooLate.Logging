@@ -3,10 +3,13 @@
 using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.IO.Compression;
 using System.Threading;
 using AlwaysTooLate.Core;
 using UnityEngine;
+
+#if NET_STANDARD_2_0
+using System.IO.Compression;
+#endif
 
 namespace AlwaysTooLate.Logging
 {
@@ -38,11 +41,13 @@ namespace AlwaysTooLate.Logging
         [Tooltip("When true, backup folder will be created which will store all old logs.")]
         public bool BackupOldLogs = true;
 
+#if NET_STANDARD_2_0
         /// <summary>
         ///     When true, logs which will go the the backup folder will be compressed.
         /// </summary>
         [Tooltip("When true, logs which will go the the backup folder will be compressed.")]
         public bool CompressBackups = true;
+#endif
 
         /// <summary>
         ///     When false, no logs will be produced (even into the standard log file!).
@@ -127,6 +132,7 @@ namespace AlwaysTooLate.Logging
 
                 var backupFileName = LogFileName.Split('.')[0] + DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss");
 
+#if NET_STANDARD_2_0
                 if (CompressBackups)
                 {
                     using (var archive = ZipFile.Open(Path.Combine(BackupDirectory, backupFileName + ".zip"),
@@ -139,6 +145,7 @@ namespace AlwaysTooLate.Logging
                     File.Delete(LogFileName);
                 }
                 else
+#endif
                 {
                     // Move the file and change it's name
                     File.Copy(LogFileName, Path.Combine(BackupDirectory, backupFileName + ".txt"));
