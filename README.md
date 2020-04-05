@@ -13,7 +13,7 @@ https://github.com/AlwaysTooLate/AlwaysTooLate.Logging.git
 
 # Setup
 
-After succesfull installation, open a scene that is loaded first when starting your game (we recommend having an entry scene called Main that is only used for initializing core systems and utilities, which then loads the next scene, that is supposed to start the game - like a Main Menu). In that scene, create an empty GameObject and attach the LoggingManager component to it. You can know use the Inspector window values to configure the LoggingManager to your needs (hover your mouse pointer over the value for a tooltip to appear). It is also recommended to disable the `Use Player Log` option in `Player Settings` of your project.
+After succesfull installation, open a scene that is loaded first when starting your game (we recommend having an entry scene called Main that is only used for initializing core systems and utilities, which then loads the next scene, that is supposed to start the game - like a Main Menu). In that scene, create an empty GameObject and attach the LoggingManager component to it. You can now use the Inspector window values to configure the LoggingManager to your needs (hover your mouse pointer over the value for a tooltip to appear). It is also recommended to disable the `Use Player Log` option in `Player Settings` of your project.
 
 # Basic Usage
 
